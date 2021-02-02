@@ -29,7 +29,7 @@ class CmdExecThread(object):
     Parameters
     ----------
     master : SerialDevice
-        A SerialDevice instance.
+        The SerialDevice instance over which to send/recieve serial commands.
     '''
     def __init__(self, master):
         if not isinstance(master, SerialDevice):
@@ -249,15 +249,15 @@ class SerialDevice(object):
 
     def close(self):
         'Close the device serial port'
-        serialio_logger.debug('%s closing. Acquiring lock', self.port)
+        serialio_logger.debug('%s CLOSING. acquiring lock', self.port)
         self.ser_lock.acquire()
-        serialio_logger.debug('%s closing. Stopping thread', self.port)
+        serialio_logger.debug('%s CLOSING. Stopping thread', self.port)
         self.cmd_thread.stop()
-        serialio_logger.debug('%s closing. Closing serial', self.port)
+        serialio_logger.debug('%s CLOSING. Closing serial', self.port)
         self.ser.close()
         self.ser_lock.release()
         self.isOpen = False
-        serialio_logger.debug('%s closed.', self.port)
+        serialio_logger.debug('%s CLOSED.', self.port)
 
     def write_cmd(self, cmd, rsp_len=None, EOL=None):
         r'''

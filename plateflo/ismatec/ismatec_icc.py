@@ -13,7 +13,8 @@ Licensed under Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)
 
 from datetime import datetime
 import logging
-import serial_io as ser
+from .. import serial_io as ser
+from . import ismatec_scanner
 
 icc_logger = logging.getLogger("ismatecICC")
 
@@ -655,51 +656,6 @@ class RegloICC():
         self.pump_ser.close()
         icc_logger.info('%s pump CLOSED', self.port)
 
-def scan_for_pumps() -> list:
-    '''
-    Scans system serial ports for connected Ismatec Reglo pumps.
-
-    Returns
-    -------
-    list [{'pump':str, 'port':str, 'addr':int}, ...]
-        One `dict` per pump detected. [{'pump':str, 'port':str, 'addr':int}, ...]
-        
-        `pump` : str - Pump model, 'ICC' or 'Digital'.
-
-        `port` : str - Serial port name.
-
-        `addr` : int - Pump internal address.
-    '''
-    ports = ser.list_ports()
-    pumps = []
-    icc_logger.info('Scanning for Reglo Digitals...')
-    for port in ports:
-        icc_logger.debug('Scanning %s...', port)
-        ser_device = ser.SerialDevice(port=port, timeout=0.1)
-        ser_device.open()
-        for i in range(1, 5):
-            icc_logger.debug('\tAddress %i...', i)
-            rsp = ser_device.write_cmd('%i#\r' % i, EOL='\n')['resp']
-            if rsp == -1:
-                icc_logger.debug('\t\t...None')
-                continue
-            if 'ICC' in rsp:
-                pumps.append({'pump': 'ICC',
-                              'port': port,
-                              'addr': i})
-                icc_logger.info('\t\tReglo ICC detected. Port %s; Addr %i.', 
-                                port, i)
-            elif 'Digital' in rsp:
-                pumps.append({'pump': 'Digital',
-                              'port': port,
-                              'addr': i})
-                icc_logger.info('\t\tReglo Dig. detected. Port %s; Addr %i.', 
-                                port, i)
-            else:
-                icc_logger.debug('\t\t...no pump detected')
-        ser_device.close()
-        del ser_device
-    return pumps if pumps else None
 
 if __name__ == "__main__":
-    print(scan_for_pumps())
+    print(ismatec_scanner.scan_for_pumps())

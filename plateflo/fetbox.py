@@ -8,15 +8,9 @@ Copyright Robert Pazdzior 2020-2021
 This file may be distributed under the terms of the GNU GPLv3+ license.
 '''
 import logging
-import serial_io as ser
+from . import serial_io as ser
 
-logging.basicConfig(filename="log_debug.txt", filemode='w',
-                    format='%(asctime)s %(name)s %(levelname)s: %(message)s',
-                    datefmt='%d/%m/%Y %H:%M:%S',
-                    level=logging.DEBUG)
-
-
-fetbox_logger = logging.getLogger('hwr-ctrl')
+fetbox_logger = logging.getLogger('FETbox')
 
 CMDS = {
     'get_id':       '@#\n',         # FETbox ID inquiry
@@ -31,7 +25,7 @@ CMDS = {
     'anawrite':     '@B%02i%03i\n'  # analogWrite pin i
 }
 
-def scan_for_controller(baud:int = 115200) -> str:
+def scan_for_fetbox(baud:int = 115200) -> str:
     '''
     Scans serial ports for any connected PlateFlo FETbox controllers.
 
@@ -43,14 +37,14 @@ def scan_for_controller(baud:int = 115200) -> str:
     Returns
     -------
     list
-        One dict per Controller containing 'port' (str) and 'id' (int).
+        One dict per FETbox containing 'port' (str) and 'id' (int).
         Empty if none detected.
     '''
     mod_port = None
     mod_id = None
     ports = ser.list_ports()
     controllers = []
-    fetbox_logger.info('Scanning for perfusion Hardware Controllers...')
+    fetbox_logger.info('Scanning for connected FETbox(es)...')
     for port in ports:
         fetbox_logger.debug('Scanning %s...', port)
         ser_device = ser.SerialDevice(port=port, timeout=0.1, baud=baud)
@@ -60,12 +54,12 @@ def scan_for_controller(baud:int = 115200) -> str:
         try:
             if 'fetbox' in rsp:
                 mod_id = int(rsp[8:])
-                fetbox_logger.info("\t\tHardware Controller (ID %i) detected.", 
+                fetbox_logger.info("\t\tFETbox (ID %i) detected.", 
                     mod_id)
                 mod_port = port
                 controllers.append({'port':mod_port, 'id':mod_id})
             else:
-                fetbox_logger.debug("\t\t...not detected")
+                fetbox_logger.info("\t\t...not detected")
         finally:
             ser_device.close()
             del ser_device
@@ -89,7 +83,7 @@ class FETbox(object):
     Attributes
     ----------
     mod_ser : Serial
-        Backend PySerial interface object
+        Backend PySerial `serial` object
     port : str
         Serial port name
     id : int
@@ -104,7 +98,7 @@ class FETbox(object):
         self.mod_ser.open()
         self.port = port
         self.id = self.query_ID()
-        fetbox_logger.debug("%s FETbox (ID: %s) initialized",
+        fetbox_logger.info("%s FETbox (ID: %s) initialized",
                             port, self.id)
 
         # Available analog pins, A0-A7
@@ -250,7 +244,7 @@ class FETbox(object):
     
     def pwm_chan(self, chan: int, pwm: int) -> bool:
         '''
-        Set given Controller MOSFET output channel PWM value.
+        Set given FETbox output channel PWM value.
         
         Parameters
         ----------
@@ -339,7 +333,7 @@ class FETbox(object):
                                 self.port, pin)
             return None
         else:
-            fetbox_logger.info("%s Controller %i analogRead. Pin %s = %i",
+            fetbox_logger.info("%s FETbox %i analogRead. Pin %s = %i",
             self.port, self.id, pin, val)
             return val
 
@@ -389,7 +383,7 @@ class FETbox(object):
                                 self.port, pin)
             return None
         else:
-            fetbox_logger.info("%s Controller(%i) digitalRead: Pin %s = %i",
+            fetbox_logger.info("%s FETbox(%i) digitalRead: Pin %s = %i",
             self.port, self.id, pin, val)
             return val
 
@@ -416,9 +410,9 @@ class FETbox(object):
         if pin in pwm_pins:
             # Warn about writing to MOSFET pin
             if pin != 11:
-                fetbox_logger.warning("analogWrite used a Controller(%i) MOSFET output (Arduino pin %i)",
+                fetbox_logger.warning("analogWrite used a FETbox(%i) MOSFET output (Arduino pin %i)",
                 self.id, pin)
-            fetbox_logger.info("%s Controller(%i) analogWrite: Pin %i - %i",
+            fetbox_logger.info("%s FETbox(%i) analogWrite: Pin %i - %i",
                                   self.port, self.id, pin, pwm)
             if self.send_cmd(CMDS['anawrite'] % (pin, pwm)):
                 return True
@@ -466,14 +460,14 @@ class FETbox(object):
         # Send command
         cmd_string = CMDS['digwrite'] % (pin, val)
         if self.send_query(cmd_string):
-            fetbox_logger.info("%s Controller(%i) digitalWrite: Pin %s = %i",
+            fetbox_logger.info("%s FETbox (%i) digitalWrite: Pin %s = %i",
             self.port, self.id, pin, val)
             return True
         return False
 
     def heartbeat(self) -> bool:
         '''
-        Ping Controller, used to confirm active/responsive connection.
+        Ping FETbox, used to confirm active/responsive connection.
         
         Returns
         -------
@@ -493,7 +487,7 @@ class FETbox(object):
 
 # If run as standalone script, will output scan results to terminal.
 if __name__ == "__main__":
-    result = scan_for_controller(baud=115200)
+    result = scan_for_fetbox(baud=115200)
     if result:
         for ctrlr in result:
             print("FETbox (ID %i) detected on %s" %
