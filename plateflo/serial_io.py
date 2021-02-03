@@ -63,6 +63,7 @@ class CmdExecThread(object):
         while not self.stop_thread.is_set():
             # Check command buffer
             cmd = None
+            elapsed = None
             timeout_us = self.device.timeout*1E6
             try:
                 cmd = self.cmd_Q.get(block=True, timeout=0.01)
@@ -93,6 +94,7 @@ class CmdExecThread(object):
 
                 # Read in expected response length, or until timed out
                 if use_len:
+                    rsp = None
                     resp_done = False
                     rsp_len = cmd['respLen']
                     while not resp_done:
@@ -102,11 +104,6 @@ class CmdExecThread(object):
                             serialio_logger.debug('%s buffer read %s',
                                             self.device.port,
                                             repr(resp))
-                            # if resp == '':
-                            #     resp = self.ser.read(rsp_len).decode('utf-8')
-                            #     serialio_logger.debug('%s response read %s',
-                            #                     self.device.port,
-                            #                     repr(resp))
                         if resp != '':
                             resp_done = True
 

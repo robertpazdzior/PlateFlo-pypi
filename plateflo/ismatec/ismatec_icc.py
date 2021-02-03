@@ -14,7 +14,6 @@ Licensed under Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)
 from datetime import datetime
 import logging
 from .. import serial_io as ser
-from . import ismatec_scanner
 
 icc_logger = logging.getLogger("ismatecICC")
 
@@ -655,7 +654,3 @@ class RegloICC():
         '''Kill all threads and close the pump's serial port'''
         self.pump_ser.close()
         icc_logger.info('%s pump CLOSED', self.port)
-
-
-if __name__ == "__main__":
-    print(ismatec_scanner.scan_for_pumps())

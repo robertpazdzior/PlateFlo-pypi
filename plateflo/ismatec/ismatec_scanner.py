@@ -54,4 +54,4 @@ def scan_for_pumps() -> list:
                 isma_logger.debug('\t\t...no pump detected')
         ser_device.close()
         del ser_device
-    return pumps if pumps else None
+    return pumps
