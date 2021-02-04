@@ -25,7 +25,7 @@ CMDS = {
     'anawrite':     '@B%02i%03i\n'  # analogWrite pin i
 }
 
-def scan_for_fetbox(baud:int = 115200) -> str:
+def scan_for_fetbox(baud:int = 115200) -> list:
     '''
     Scans serial ports for any connected PlateFlo FETbox controllers.
 
@@ -53,7 +53,7 @@ def scan_for_fetbox(baud:int = 115200) -> str:
         rsp = ser_device.write_cmd(CMDS['get_id'], EOL='\n')['resp']
         try:
             if 'fetbox' in rsp:
-                mod_id = int(rsp[8:])
+                mod_id = int(rsp[6:])
                 fetbox_logger.info("\t\tFETbox (ID %i) detected.", 
                     mod_id)
                 mod_port = port

@@ -5,7 +5,7 @@ with open('README.md', 'r', encoding="utf-8") as fh:
 
 setuptools.setup(
     name="plateflo",
-    version="0.1.0",
+    version="0.1.1",
     author="Robert Pazdzior",
     author_email="rpazdzior@protonmail.com",
     description="PlateFlo perfusion system tools.",
