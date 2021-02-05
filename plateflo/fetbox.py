@@ -25,7 +25,7 @@ CMDS = {
     'anawrite':     '@B%02i%03i\n'  # analogWrite pin i
 }
 
-def scan_for_fetbox(baud:int = 115200) -> list:
+def scan_for_fetbox(baud:int = 115200) -> list[dict[str, int]]:
     '''
     Scans serial ports for any connected PlateFlo FETbox controllers.
 
@@ -36,7 +36,7 @@ def scan_for_fetbox(baud:int = 115200) -> list:
 
     Returns
     -------
-    list
+    list[dict[str, int]]
         One dict per FETbox containing `port` (str) and `id` (int).
         Empty if none detected.
     '''
@@ -64,42 +64,6 @@ def scan_for_fetbox(baud:int = 115200) -> list:
             ser_device.close()
             del ser_device
     return controllers
-
-def auto_connect_fetbox(baud:int = 115200) -> dict:
-    '''
-    Automatically connect to FETbox(es).
-
-    Parameters
-    ---------
-    baud : int, default=115200
-        Serial baud rate.
-
-    Returns
-    -------
-    dict
-        FETbox objects keyed by respective IDs
-
-    Raises
-    ------
-    ConnectionError
-        No connected FETbox detected
-        
-        Non-unique FETbox device IDs detected
-    '''
-    fetboxes = {}
-    used_ids = []
-    scan_result = scan_for_fetbox(baud)
-    if not scan_result: raise ConnectionError('No connected FETboxes detected.')
-
-    for box in scan_result:
-        if box['id'] in used_ids:
-            raise ConnectionError(('Multiple FETboxes detected with identical ' 
-                                    'IDs. Change ID in firmware and reupload.'))
-
-        _fetbox = {box['id'] : FETbox(box['port'], baud)}
-        fetboxes.update(_fetbox)
-
-    return fetboxes
 
 class FETbox(object):
     '''
@@ -545,6 +509,42 @@ class FETbox(object):
         '''Kill any threads and close the FETbox serial port'''
         self.mod_ser.close()
         fetbox_logger.info('%s FETbox CLOSED', self.port)
+
+def auto_connect_fetbox(baud:int = 115200) -> dict[int, FETbox]:
+    '''
+    Automatically connect to FETbox(es).
+
+    Parameters
+    ---------
+    baud : int, default=115200
+        Serial baud rate.
+
+    Returns
+    -------
+    dict
+        FETbox objects keyed by respective IDs
+
+    Raises
+    ------
+    ConnectionError
+        No connected FETbox detected
+        
+        Non-unique FETbox device IDs detected
+    '''
+    fetboxes = {}
+    used_ids = []
+    scan_result = scan_for_fetbox(baud)
+    if not scan_result: raise ConnectionError('No connected FETboxes detected.')
+
+    for box in scan_result:
+        if box['id'] in used_ids:
+            raise ConnectionError(('Multiple FETboxes detected with identical ' 
+                                    'IDs. Change ID in firmware and reupload.'))
+
+        _fetbox = {box['id'] : FETbox(box['port'], baud)}
+        fetboxes.update(_fetbox)
+
+    return fetboxes
 
 # If run as standalone script, will output scan results to terminal.
 if __name__ == "__main__":
