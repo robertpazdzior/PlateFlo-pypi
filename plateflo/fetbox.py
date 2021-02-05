@@ -8,6 +8,7 @@ Copyright Robert Pazdzior 2020-2021
 This file may be distributed under the terms of the GNU GPLv3+ license.
 '''
 import logging
+from typing import Dict, List
 from . import serial_io as ser
 
 fetbox_logger = logging.getLogger('FETbox')
@@ -25,7 +26,7 @@ CMDS = {
     'anawrite':     '@B%02i%03i\n'  # analogWrite pin i
 }
 
-def scan_for_fetbox(baud:int = 115200) -> list[dict[str, int]]:
+def scan_for_fetbox(baud:int = 115200) -> List[Dict[str, int]]:
     '''
     Scans serial ports for any connected PlateFlo FETbox controllers.
 
@@ -510,7 +511,7 @@ class FETbox(object):
         self.mod_ser.close()
         fetbox_logger.info('%s FETbox CLOSED', self.port)
 
-def auto_connect_fetbox(baud:int = 115200) -> dict[int, FETbox]:
+def auto_connect_fetbox(baud:int = 115200) -> Dict[int, FETbox]:
     '''
     Automatically connect to FETbox(es).
 
@@ -521,8 +522,8 @@ def auto_connect_fetbox(baud:int = 115200) -> dict[int, FETbox]:
 
     Returns
     -------
-    dict
-        FETbox objects keyed by respective IDs
+    dict[int, FETbox]
+        FETbox objects keyed by respective ID
 
     Raises
     ------
