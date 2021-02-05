@@ -37,7 +37,7 @@ def scan_for_fetbox(baud:int = 115200) -> list:
     Returns
     -------
     list
-        One dict per FETbox containing 'port' (str) and 'id' (int).
+        One dict per FETbox containing `port` (str) and `id` (int).
         Empty if none detected.
     '''
     mod_port = None
@@ -65,6 +65,42 @@ def scan_for_fetbox(baud:int = 115200) -> list:
             del ser_device
     return controllers
 
+def auto_connect_fetbox(baud:int = 115200) -> dict:
+    '''
+    Automatically connect to FETbox(es).
+
+    Parameters
+    ---------
+    baud : int, default=115200
+        Serial baud rate.
+
+    Returns
+    -------
+    dict
+        FETbox objects keyed by respective IDs
+
+    Raises
+    ------
+    ConnectionError
+        No connected FETbox detected
+        
+        Non-unique FETbox device IDs detected
+    '''
+    fetboxes = {}
+    used_ids = []
+    scan_result = scan_for_fetbox(baud)
+    if not scan_result: raise ConnectionError('No connected FETboxes detected.')
+
+    for box in scan_result:
+        if box['id'] in used_ids:
+            raise ConnectionError(('Multiple FETboxes detected with identical ' 
+                                    'IDs. Change ID in firmware and reupload.'))
+
+        _fetbox = {box['id'] : FETbox(box['port'], baud)}
+        fetboxes.update(_fetbox)
+
+    return fetboxes
+
 class FETbox(object):
     '''
     FETbox serial control.
@@ -91,12 +127,23 @@ class FETbox(object):
     pin_table: dict
         Analog pin name to pin number mapping.
 
+    Raises
+    ------
+    ValueError
+        provided serial port is not connected to a FETbox device.
     '''
     def __init__(self, port:str, baud:int = 115200):
         self.mod_ser = ser.SerialDevice(port, baud=baud, timeout=0.3)
         self.mod_ser.ser.dtr = False
         self.mod_ser.open()
         self.port = port
+
+        # Validate device connection
+        if not self._validate_device():
+            self.mod_ser.close()
+            raise ValueError( ('Device on %s is not a FETbox, or improperly' 
+                               'onfigured (e.g. baud).') % self.port)
+
         self.id = self.query_ID()
         fetbox_logger.info("%s FETbox (ID: %s) initialized",
                             port, self.id)
@@ -188,6 +235,20 @@ class FETbox(object):
                 return(rsp)
         return None
 
+    def _validate_device(self) -> bool:
+        '''
+        Validate connected device is a FETbox.
+
+        Returns
+        -------
+        bool
+            Device is FETbox
+        '''
+        resp = self.send_query(CMDS["get_id"])
+        if 'fetbox' in resp:
+            return True
+        return False
+
     def query_ID(self) -> int:
         '''
         Get the FETbox's unique ID, as defined in firmware.
@@ -200,7 +261,7 @@ class FETbox(object):
         fetbox_logger.debug("%s querying FETbox ID...", self.port)
         rsp = self.send_query(CMDS["get_id"])
         fetbox_logger.debug("\t\t Response: %s", rsp)
-        return int(rsp[8:])
+        return int(rsp[6:])
 
     def enable_chan(self, chan:int) -> bool:
         '''
