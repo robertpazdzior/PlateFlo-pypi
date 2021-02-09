@@ -1,11 +1,7 @@
+# Copyright Robert Pazdzior 2020-2021
+# This file may be distributed under the terms of the GNU GPLv3+ license.
 '''
-Scheduler
-=========
-Module for scheduling and executing PlateFlo perfusion system events.
-
-Copyright Robert Pazdzior 2020-2021
-
-This file may be distributed under the terms of the GNU GPLv3+ license.
+Scheduler for and executing PlateFlo perfusion system events.
 '''
 
 import logging
@@ -45,7 +41,8 @@ class Scheduler():
         Returns
         -------
         int
-            Event identifier. Can be used to remove event with :meth:`remove_event`
+            Event identifier. Can be used to remove event with
+            :meth:`remove_event`
         '''
         _event = event
         if not _event.eventID:
@@ -114,11 +111,14 @@ class SingleEvent():
     task : function pointer
             Function to excecute at scheduled time
 
-    kwargs
+    args : list
+        positional arguments, passed to task
+
+    **kwargs
         keyword arguments passed to task
     
     '''
-    def __init__(self, dateTime, task, _eventID = None, *args, **kwargs):
+    def __init__(self, dateTime, task, _eventID = None, args = [], **kwargs):
         self.eventType = "Single"
         self.triggered = False
         self.dateTime = dateTime
@@ -159,11 +159,11 @@ class RecurringEvent():
     delay_m : float, float
         First occurance only after this number of minutes. Excludes `start_time`.
 
-    args
-        Positional arguments passed to task
+    args : list
+        Positional arguments, passed to task
 
-    kwargs
-        Keyword arguments passed to task
+    **kwargs
+        Keyword arguments, passed to task
 
     Raises
     ------
@@ -171,7 +171,7 @@ class RecurringEvent():
         if both `start_time` and `delay_m` parameters are provided.
     '''
     def __init__(self, interval, task, start_time = None, stop_time = None,
-                 delay_m = None, _eventID = None, *args, **kwargs):
+                 delay_m = None, _eventID = None, args = [], **kwargs):
         self.eventType = "Recurring"
         self.interval = interval
         self._task = task
@@ -179,11 +179,14 @@ class RecurringEvent():
         self._stop_time = stop_time
         self._delay_m = delay_m
         self.eventID = _eventID
-        self._taskkwargs = kwargs
         self._taskargs = args
+        self._taskkwargs = kwargs
         self.dateTime = None
 
         self.set_sched_dateTime()
+
+        if not task:
+            raise ValueError("Function pointer, 'task', must be provided!")
 
     def set_sched_dateTime(self):
         # Argument check
@@ -205,20 +208,22 @@ class RecurringEvent():
         elif self._start_time:
             # Handle recurrance (start_time is in the past)
             new_start = self._start_time
-            while new_start < datetime.now():
+            while new_start <= datetime.now():
                 new_start += timedelta(minutes=self.interval)
             self.dateTime = new_start
 
     def trigger(self):
-        if self._stop_time and datetime.now() >= self._stop_time:
-            return None
-
         self._task(*self._taskargs, **self._taskkwargs)
-        next_event = RecurringEvent(self.interval, self._task, self._start_time,
-                                    self._stop_time, self._delay_m, 
-                                    self.eventID, *self._taskargs,
-                                    **self._taskkwargs)
-        return next_event
+
+        if (datetime.now() + timedelta(minutes=self.interval)) < self._stop_time:
+            next_event = RecurringEvent(self.interval, self._task, self._start_time,
+                                        self._stop_time, self._delay_m, 
+                                        self.eventID, self._taskargs,
+                                        **self._taskkwargs)
+            return next_event
+        
+        sched_logger.debug('recurring event (%i) ended.', self.eventID)
+        return None
 
     def __str__(self):
         time_fmt = format(self.dateTime, "%Y/%m/%d %H:%M:%S:%f")
@@ -230,7 +235,7 @@ class RecurringEvent():
             msg_str += ', delay=%fmin' % self._delay_m
         return msg_str
 
-def DailyEvent(task, hh = 0, mm = 0, s = 0, *args, **kwargs):
+def DailyEvent(task, hh = 0, mm = 0, s = 0, args = [], **kwargs):
     '''
     Wrapper around :class:`RecurringEvent` for convenient daily task execution.
 
@@ -248,7 +253,7 @@ def DailyEvent(task, hh = 0, mm = 0, s = 0, *args, **kwargs):
     task : function pointer
         Function executed at scheduled time
 
-    args
+    args : list
         Add positional arguments passed to task
 
     kwargs
@@ -267,5 +272,5 @@ def DailyEvent(task, hh = 0, mm = 0, s = 0, *args, **kwargs):
                         minute=mm,
                         second=s)
     event = RecurringEvent(interval=60*24, task=task, start_time=dateTime,
-                           *args, **kwargs)
+                           args = args, **kwargs)
     return event

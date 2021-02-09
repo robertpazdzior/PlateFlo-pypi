@@ -1,8 +1,9 @@
+# Copyright Robert Pazdzior 2020-2021
+# This file may be distributed under the terms of the GNU GPLv3+ license.
+# "Ismatec", "Reglo Digital", and "Reglo ICC" are copyright of their respective
+# owners.
 '''
-Ismatec Scanner
-===============
 Scan system serial ports for connected Ismatec Reglo peristaltic pumps.
-
 '''
 
 import logging

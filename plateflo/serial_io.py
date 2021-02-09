@@ -1,14 +1,8 @@
+# Copyright Robert Pazdzior 2020-2021
+# This file may be distributed under the terms of the GNU GPLv3+ license.
 '''
-Serial IO
-=========
-Library for basic threaded serial command/response handling, avoids blocking
-the main script thread during operation.
-
-Author: Robert Pazdzior (2021) 
-
-Contact: github.com/robertpazdzior - rpazdzior@cemm.at
-
-Licensed under Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)
+Basic threaded serial command/response handling, avoids blocking
+the main thread with I/O operations during operation.
 '''
 
 from queue import Queue, Empty

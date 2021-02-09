@@ -1,14 +1,10 @@
+# Copyright Robert Pazdzior 2020-2021
+# This file may be distributed under the terms of the GNU GPLv3+ license.
+# "Ismatec", "Reglo Digital", and "Reglo ICC" are copyright of their respective
+# owners.
 '''
-Ismatec Reglo ICC
-=================
 Convenience functions for control of common Ismatec Reglo ICC peristaltic pump
 functions.
-
-Author: Robert Pazdzior (2021)
-
-Contact: github.com/robertpazdzior rpazdzior@cemm.at
-
-Licensed under Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)
 '''
 
 from datetime import datetime

@@ -1,11 +1,7 @@
+# Copyright Robert Pazdzior 2020-2021
+# This file may be distributed under the terms of the GNU GPLv3+ license.
 '''
-PlateFlo FETbox Serial Control
-==============================
 Serial control of PlateFlo FETbox hardware controllers.
-
-Copyright Robert Pazdzior 2020-2021
-
-This file may be distributed under the terms of the GNU GPLv3+ license.
 '''
 import logging
 from typing import Dict, List
