@@ -86,7 +86,7 @@ class Scheduler():
         to the event history.
         Reschedules recurring events if necessary.
         '''
-        if len(self.events):
+        if self.events:
             queued = self.events[0]
         else:
             return
@@ -144,20 +144,20 @@ class RecurringEvent():
 
     Parameters
     ----------
-    interval : float
-        Recurrance interval, in minutes
+    interval : timedelta
+        Recurrance interval
 
     task : function pointer
         Function to excute at scheduled interval
 
     start_time : datetime, optional
-        First occurance at specified time. Excludes `delay_m`
+        First occurance at specified time. Excludes `delay`
 
     stop_time : datetime, optional
         Terminate recurrance after this time
 
-    delay_m : float, float
-        First occurance only after this number of minutes. Excludes `start_time`.
+    delay : timedelta, optional
+        Delay first occurance by this amount. Excludes `start_time`
 
     args : list
         Positional arguments, passed to task
@@ -167,17 +167,23 @@ class RecurringEvent():
 
     Raises
     ------
-    Exception
-        if both `start_time` and `delay_m` parameters are provided.
+    ValueError
+        both `start_time` and `delay` parameters are provided.
+
+        task function not provided
+
+    TypeError
+        interval not of type `timedelta`
+
     '''
     def __init__(self, interval, task, start_time = None, stop_time = None,
-                 delay_m = None, _eventID = None, args = [], **kwargs):
+                 delay = None, _eventID = None, args = [], **kwargs):
         self.eventType = "Recurring"
         self.interval = interval
         self._task = task
         self._start_time = start_time
         self._stop_time = stop_time
-        self._delay_m = delay_m
+        self._delay = delay
         self.eventID = _eventID
         self._taskargs = args
         self._taskkwargs = kwargs
@@ -190,34 +196,37 @@ class RecurringEvent():
 
     def set_sched_dateTime(self):
         # Argument check
-        if self._delay_m and self._start_time:
-            raise Exception('Enter one of "delay_m" OR "start_time", not both.')
+        if self._delay and self._start_time:
+            raise ValueError('Enter one of "delay" OR "start_time", not both.')
         
         # Simple interval
-        if not (self._start_time or self._delay_m):
-            self.dateTime = datetime.now() + timedelta(minutes=self.interval)
-
-        # Start after delay (minutes)
-        elif self._delay_m:
-            if not self.eventID:
-                self.dateTime = datetime.now() + timedelta(minutes=self._delay_m)
+        if not (self._start_time or self._delay):
+            if type(self.interval) is timedelta:
+                self.dateTime = datetime.now() + self.interval
             else:
-                self.dateTime = datetime.now() + timedelta(minutes=self.interval)
+                raise TypeError("interval must be of type 'timedelta'")
+
+        # Start after delay
+        elif self._delay:
+            if not self.eventID:
+                self.dateTime = datetime.now() + self._delay
+            else:
+                self.dateTime = datetime.now() + self.interval
         
         # Start at specified time
         elif self._start_time:
             # Handle recurrance (start_time is in the past)
             new_start = self._start_time
             while new_start <= datetime.now():
-                new_start += timedelta(minutes=self.interval)
+                new_start += self.interval
             self.dateTime = new_start
 
     def trigger(self):
         self._task(*self._taskargs, **self._taskkwargs)
 
-        if (datetime.now() + timedelta(minutes=self.interval)) < self._stop_time:
+        if (datetime.now() + self.interval) < self._stop_time:
             next_event = RecurringEvent(self.interval, self._task, self._start_time,
-                                        self._stop_time, self._delay_m, 
+                                        self._stop_time, self._delay, 
                                         self.eventID, self._taskargs,
                                         **self._taskkwargs)
             return next_event
@@ -227,12 +236,12 @@ class RecurringEvent():
 
     def __str__(self):
         time_fmt = format(self.dateTime, "%Y/%m/%d %H:%M:%S:%f")
-        msg_str = 'recurring event (%i), interval_minutes=%.3f next_sched=%s, task=%s args=%s kwargs=%s' % (self.eventID, self.interval, time_fmt, self._task.__name__,
+        msg_str = 'recurring event (%i), interval=%s next_sched=%s, task=%s args=%s kwargs=%s' % (self.eventID, self.interval, time_fmt, self._task.__name__,
                                 self._taskargs, self._taskkwargs)
         if self._start_time:
             msg_str += ', start_time=%s' % format(self._start_time, "%Y/%m/%d %H:%M:%S")
-        if self._delay_m:
-            msg_str += ', delay=%fmin' % self._delay_m
+        if self._delay:
+            msg_str += ', delay=%s' % self._delay
         return msg_str
 
 def DailyEvent(task, hh = 0, mm = 0, s = 0, args = [], **kwargs):
