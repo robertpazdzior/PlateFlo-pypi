@@ -238,7 +238,7 @@ class FETbox(object):
         bool
             Command success/failure
         '''
-        if self.send_cmd(CMDS['enable'] % chan-1):
+        if self.send_cmd(CMDS['enable'] % chan ):
             fetbox_logger.info('%s Enabled chan. %i', self.port, chan)
             return True
         fetbox_logger.error('%s Failed to enable chan. %i', self.port, chan)
@@ -258,7 +258,7 @@ class FETbox(object):
         bool
             Command success/failure
         '''
-        if self.send_cmd(CMDS['disable'] % chan-1):
+        if self.send_cmd(CMDS['disable'] % chan):
             fetbox_logger.info('%s Disabled chan. %i', self.port, chan)
             return True
         fetbox_logger.error('%s Failed to disable chan. %i', self.port, chan)

@@ -177,7 +177,7 @@ class RecurringEvent():
 
     '''
     def __init__(self, interval, task, start_time = None, stop_time = None,
-                 delay = None, _eventID = None, args = [], **kwargs):
+                 delay = None, _eventID = None, _resched = False, args = [], **kwargs):
         self.eventType = "Recurring"
         self.interval = interval
         self._task = task
@@ -188,7 +188,7 @@ class RecurringEvent():
         self._taskargs = args
         self._taskkwargs = kwargs
         self.dateTime = None
-
+        self.__resched = _resched
         self.set_sched_dateTime()
 
         if not task:
@@ -202,13 +202,16 @@ class RecurringEvent():
         # Simple interval
         if not (self._start_time or self._delay):
             if type(self.interval) is timedelta:
-                self.dateTime = datetime.now() + self.interval
+                if self.__resched:
+                    self.dateTime = datetime.now() + self.interval
+                else:
+                    self.dateTime = datetime.now()
             else:
                 raise TypeError("interval must be of type 'timedelta'")
 
         # Start after delay
         elif self._delay:
-            if not self.eventID:
+            if not self.__resched:
                 self.dateTime = datetime.now() + self._delay
             else:
                 self.dateTime = datetime.now() + self.interval
@@ -223,17 +226,18 @@ class RecurringEvent():
 
     def trigger(self):
         self._task(*self._taskargs, **self._taskkwargs)
-
-        if (datetime.now() + self.interval) < self._stop_time:
-            next_event = RecurringEvent(self.interval, self._task, self._start_time,
-                                        self._stop_time, self._delay, 
-                                        self.eventID, self._taskargs,
-                                        **self._taskkwargs)
-            return next_event
-        
-        sched_logger.debug('recurring event (%i) ended.', self.eventID)
-        return None
-
+        next_evt = RecurringEvent(self.interval, self._task, self._start_time,
+                                      self._stop_time, self._delay, 
+                                      self.eventID, True,
+                                      self._taskargs,
+                                      **self._taskkwargs)
+        if self._stop_time:
+            if (datetime.now() + self.interval) < self._stop_time:
+                return next_evt
+            sched_logger.debug('recurring event (%i) ended.', self.eventID)
+            return None
+        return next_evt
+    
     def __str__(self):
         time_fmt = format(self.dateTime, "%Y/%m/%d %H:%M:%S:%f")
         msg_str = 'recurring event (%i), interval=%s next_sched=%s, task=%s args=%s kwargs=%s' % (self.eventID, self.interval, time_fmt, self._task.__name__,
