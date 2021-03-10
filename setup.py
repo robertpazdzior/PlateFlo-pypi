@@ -5,7 +5,7 @@ with open('README.md', 'r', encoding="utf-8") as fh:
 
 setuptools.setup(
     name="plateflo",
-    version="0.3.2",
+    version="0.3.3",
     author="Robert Pazdzior",
     author_email="rpazdzior@protonmail.com",
     description="PlateFlo perfusion system tools.",
@@ -19,6 +19,6 @@ setuptools.setup(
         "Operating System :: OS Independent",
         "Development Status :: 3 - Alpha"
     ],
-    python_requires='>=3.8',
+    python_requires='>=3.7',
     install_requires=['pyserial >= 3.5']
 )
