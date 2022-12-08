@@ -23,8 +23,8 @@ The `plateflo` package includes the following modules and sub-package:
 * `serial_io` - Underlying threaded serial I/O library. Built around `pyserial`
 
 ## Documentation
-* Publication [coming soon]
-* PlateFlo ReadTheDocs [coming soon]
+* HardwareX Publication - https://doi.org/10.1016/j.ohx.2021.e00222
+* PlateFlo ReadTheDocs - https://plateflo.readthedocs.io
 
 ## Source
 Github - https://github.com/robertpazdzior/plateflo-pypi
